@@ -20,7 +20,13 @@ def _database_uri():
 class Config(object):
     """Base Config Object"""
     DEBUG = False
-    SECRET_KEY = os.environ.get('SECRET_KEY', 'Som3$ec5etK*y')
+    WTF_CSRF_ENABLED = True
+    # Strip whitespace so .env lines like SECRET_KEY= abc still work.
+    SECRET_KEY = (os.environ.get("SECRET_KEY") or "Som3$ec5etK*y").strip()
+    # Session cookie must be sent on credentialed API calls (Vue → Flask).
+    # Lax works for same-site http://localhost:* in modern browsers.
+    SESSION_COOKIE_SAMESITE = "Lax"
+    SESSION_COOKIE_HTTPONLY = True
     UPLOAD_FOLDER = os.environ.get('UPLOAD_FOLDER')
     SQLALCHEMY_DATABASE_URI = _database_uri()
     SQLALCHEMY_TRACK_MODIFICATIONS = False # This is just here to suppress a warning from SQLAlchemy as it will soon be removed

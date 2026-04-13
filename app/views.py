@@ -6,7 +6,7 @@ This file creates your application.
 """
 
 from app import app
-from flask import render_template, request, jsonify, send_file, flash
+from flask import render_template, request, jsonify, send_file, flash, abort
 import os
 import uuid
 from werkzeug.utils import secure_filename
@@ -31,8 +31,46 @@ def get_csrf():
     return jsonify({'csrf_token': generate_csrf()})
 
 
-@app.route('/api/v1/movies', methods=['POST'])
-def movies():
+def _uploads_folder():
+    return os.path.join(os.getcwd(), "uploads")
+
+
+def _poster_public_url(filename):
+    safe = secure_filename(filename or "")
+    if not safe:
+        return ""
+    return f"/api/v1/posters/{safe}"
+
+
+@app.get("/api/v1/posters/<filename>")
+def get_poster(filename):
+    safe = secure_filename(filename)
+    if not safe or safe != filename:
+        abort(404)
+    path = os.path.join(_uploads_folder(), safe)
+    if not os.path.isfile(path):
+        abort(404)
+    return send_file(path)
+
+
+@app.get("/api/v1/movies")
+def list_movies():
+    rows = Movie.query.order_by(Movie.id.asc()).all()
+    movies = []
+    for m in rows:
+        movies.append(
+            {
+                "id": m.id,
+                "title": m.title,
+                "description": m.description,
+                "poster": _poster_public_url(m.poster),
+            }
+        )
+    return jsonify({"movies": movies})
+
+
+@app.post("/api/v1/movies")
+def create_movie():
     form = MovieForm()
 
     if not form.validate_on_submit():
@@ -45,7 +83,7 @@ def movies():
     if not filename:
         filename = f"poster_{uuid.uuid4().hex}.jpg"
 
-    upload_folder = os.path.join(os.getcwd(), 'uploads')
+    upload_folder = _uploads_folder()
     os.makedirs(upload_folder, exist_ok=True)
 
     try:
