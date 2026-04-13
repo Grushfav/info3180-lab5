@@ -8,7 +8,10 @@ This file creates your application.
 from app import app
 from flask import render_template, request, jsonify, send_file, flash
 import os
+import uuid
 from werkzeug.utils import secure_filename
+from sqlalchemy.exc import SQLAlchemyError
+from flask_wtf.csrf import generate_csrf, CSRFError
 from app.models import Movie
 from app.forms import MovieForm
 from app import db
@@ -23,21 +26,31 @@ def index():
     return jsonify(message="This is the beginning of our API")
 
 
+@app.route('/api/v1/csrf-token', methods=['GET'])
+def get_csrf():
+    return jsonify({'csrf_token': generate_csrf()})
+
+
 @app.route('/api/v1/movies', methods=['POST'])
 def movies():
     form = MovieForm()
 
-    if form.validate_on_submit():
-        # Secure filename
-        poster_file = form.poster.data
-        filename = secure_filename(poster_file.filename)
+    if not form.validate_on_submit():
+        return jsonify({
+            "errors": form_errors(form)
+        }), 400
 
-        # Save file to uploads folder
-        upload_folder = os.path.join(os.getcwd(), 'uploads')
-        os.makedirs(upload_folder, exist_ok=True)
+    poster_file = form.poster.data
+    filename = secure_filename(poster_file.filename or "")
+    if not filename:
+        filename = f"poster_{uuid.uuid4().hex}.jpg"
+
+    upload_folder = os.path.join(os.getcwd(), 'uploads')
+    os.makedirs(upload_folder, exist_ok=True)
+
+    try:
         poster_file.save(os.path.join(upload_folder, filename))
 
-        # Create Movie record
         movie = Movie(
             title=form.title.data,
             description=form.description.data,
@@ -45,18 +58,30 @@ def movies():
         )
         db.session.add(movie)
         db.session.commit()
-
+    except SQLAlchemyError as err:
+        db.session.rollback()
+        app.logger.exception("Database error in POST /api/v1/movies")
         return jsonify({
-            "message": "Movie Successfully added",
-            "title": movie.title,
-            "poster": movie.poster,
-            "description": movie.description
-        }), 201
-
-    else:
+            "errors": [
+                "Could not save the movie to the database. "
+                "Confirm PostgreSQL is running and credentials in .env are correct, "
+                "or use the default SQLite database by unsetting DATABASE_URL. "
+                "If the database is new, run: flask db upgrade",
+                str(err.orig) if getattr(err, "orig", None) else str(err),
+            ]
+        }), 500
+    except OSError as err:
+        app.logger.exception("File error in POST /api/v1/movies")
         return jsonify({
-            "errors": form_errors(form)
-        }), 400
+            "errors": [f"Could not save the poster file: {err}"]
+        }), 500
+
+    return jsonify({
+        "message": "Movie Successfully added",
+        "title": movie.title,
+        "poster": movie.poster,
+        "description": movie.description
+    }), 201
 
 ###
 # The functions below should be applicable to all Flask apps.
@@ -76,6 +101,17 @@ def form_errors(form):
             error_messages.append(message)
 
     return error_messages
+
+
+@app.errorhandler(CSRFError)
+def handle_csrf_error(err):
+    return jsonify({
+        'errors': [
+            'CSRF token missing or invalid. Refresh the page and try again.',
+            str(err),
+        ]
+    }), 400
+
 
 @app.route('/<file_name>.txt')
 def send_text_file(file_name):
