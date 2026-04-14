@@ -1,4 +1,5 @@
 # INFO3180 Lab 5 — Movies (Vue + Flask)
+## Gavin Seaton -620043505
 
 A small full-stack app: **Vue 3** (Vite) on the front end and a **Flask** JSON API on the back end. Users can add movies with a title, description, and poster image, and browse saved movies as cards.
 
