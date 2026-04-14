@@ -54,7 +54,7 @@ def get_poster(filename):
 
 
 @app.get("/api/v1/movies")
-def list_movies():
+def add_movies():
     rows = Movie.query.order_by(Movie.id.asc()).all()
     movies = []
     for m in rows:
@@ -70,7 +70,7 @@ def list_movies():
 
 
 @app.post("/api/v1/movies")
-def create_movie():
+def movies():
     form = MovieForm()
 
     if not form.validate_on_submit():
@@ -121,12 +121,7 @@ def create_movie():
         "description": movie.description
     }), 201
 
-###
-# The functions below should be applicable to all Flask apps.
-###
 
-# Here we define a function to collect form errors from Flask-WTF
-# which we can later use
 def form_errors(form):
     error_messages = []
     """Collects form errors"""
@@ -160,11 +155,7 @@ def send_text_file(file_name):
 
 @app.after_request
 def add_header(response):
-    """
-    Add headers to both force latest IE rendering engine or Chrome Frame,
-    and also tell the browser not to cache the rendered page. If we wanted
-    to we could change max-age to 600 seconds which would be 10 minutes.
-    """
+   
     response.headers['X-UA-Compatible'] = 'IE=Edge,chrome=1'
     response.headers['Cache-Control'] = 'public, max-age=0'
     return response

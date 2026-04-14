@@ -1,40 +1,54 @@
-# INFO3180 VueJS and Flask Starter
+# INFO3180 Lab 5 — Movies (Vue + Flask)
 
-This template should help get you started developing with Vue 3 on the frontend and Flask as an API on the backend.
+A small full-stack app: **Vue 3** (Vite) on the front end and a **Flask** JSON API on the back end. Users can add movies with a title, description, and poster image, and browse saved movies as cards.
 
-## Recommended IDE Setup
-
-[VSCode](https://code.visualstudio.com/) + [Volar](https://marketplace.visualstudio.com/items?itemName=johnsoncodehk.volar) (and disable Vetur) + [TypeScript Vue Plugin (Volar)](https://marketplace.visualstudio.com/items?itemName=johnsoncodehk.vscode-typescript-vue-plugin).
-
-## Customize configuration
-
-See [Vite Configuration Reference](https://vitejs.dev/config/).
-
-## Project Setup
-
-```sh
-npm install
+## Features
+- **Add movie** (`/movies/create`) — form with validation; poster file saved under `uploads/`, metadata in the database.
+- **Movie list** (`/movies`) — fetches movies from the API and displays them as cards with poster images.
+- **CSRF protection** — token fetched from the API and sent with `POST` requests (`X-CSRFToken` header).
+- **Success / error feedback** — flash-style success after save; validation and server errors shown on the form.
+## Tech stack
+| Layer    | Technologies |
+|----------|----------------|
+| Frontend | Vue 3, Vue Router, Vite, Bootstrap (via CDN in `index.html`) |
+| Backend  | Flask, Flask-SQLAlchemy, Flask-Migrate, Flask-WTF, Flask-CORS |
+| Database | PostgreSQL via `DATABASE_URL` |
+## Prerequisites
+- **Node.js** (for `npm`)
+- **Python 3** with `pip`
+- A virtual environment is recommended for Python dependencies
+## Environment variables
+Create a `.env` file in the project root (see your course materials). Typical values:
+```
+FLASK_DEBUG=True
+FLASK_RUN_HOST=0.0.0.0
+FLASK_RUN_PORT=8080
+SECRET_KEY= secret_key
+DATABASE_URL=postgresql://tester:password@localhost/lab5
 ```
 
-### Compile and Hot-Reload for Development
-
-```sh
+## Setup
+### 1. Python (API)
+```bash
+python -m venv .venv
+# Windows:
+.\.venv\Scripts\activate
+# macOS/Linux:
+# source .venv/bin/activate
+pip install -r requirements.txt
+Apply database migrations:
+flask db init
+flask db upgrade
+flask --app app run --debug
+Terminal 2 — Vite
+2. Node (frontend)
+npm install
+3. Run the app
 npm run dev
 ```
 
-### Compile and Minify for Production
 
-```sh
-npm run build
-```
+# Snapshot
+<img src = "photo/movies.png" alt = "List of movies">
 
-## Start Flask API
-
-Remember to always create a virtual environment and install the packages in your requirements file
-
-```bash
-$ python -m venv venv (you may need to use python3 instead)
-$ source venv/bin/activate (or .\venv\Scripts\activate on Windows)
-$ pip install -r requirements.txt
-$ flask --app app --debug run
-```
+<img src = "photo/add_movies.jpeg" alt = "Add movies">
