@@ -1,8 +1,5 @@
 <template>
   <form id="movieForm" @submit.prevent="saveMovie">
-    <div v-if="successMessage" class="alert alert-success" role="alert">
-      {{ successMessage }}
-    </div>
     <div v-if="errorMessages.length" class="alert alert-danger" role="alert">
       <ul class="mb-0 ps-3">
         <li v-for="(msg, index) in errorMessages" :key="index">{{ msg }}</li>
@@ -48,6 +45,9 @@
 
 <script setup>
 import { ref, onMounted } from "vue";
+import { useRouter } from "vue-router";
+
+const router = useRouter();
 
 /** Empty = use same-origin /api/... (Vite proxy). Set VITE_API_ORIGIN in .env.development to call Flask directly. */
 const apiOrigin = (import.meta.env.VITE_API_ORIGIN || "").replace(/\/$/, "");
@@ -62,7 +62,6 @@ const fetchOpts = {
 
 let csrf_token = ref("");
 const csrfReady = ref(false);
-const successMessage = ref("");
 const errorMessages = ref([]);
 
 function parseJsonOrExplain(response, text) {
@@ -115,7 +114,6 @@ onMounted(() => {
 });
 
 function saveMovie() {
-  successMessage.value = "";
   errorMessages.value = [];
 
   if (!csrf_token.value) {
@@ -178,9 +176,12 @@ function saveMovie() {
         errorMessages.value = data.errors;
         return;
       }
-      successMessage.value = data.message || "Movie Successfully added";
       errorMessages.value = [];
-      console.log(data);
+      sessionStorage.setItem(
+        "flashMessage",
+        data.message || "Movie Successfully added"
+      );
+      router.push({ name: "movies" });
     })
     .catch(function (error) {
       console.log(error);
